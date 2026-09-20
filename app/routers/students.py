@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Literal
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -37,14 +38,63 @@ def add_student(
     "/",
     response_model=list[StudentResponse],
     summary="Get students",
-    description="Get all students or filter students by department and course."
+    description="Get all students or filter students by department and course with pagination."
 )
 def read_students(
     department: str | None = None,
     course: str | None = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    sort_by: Literal["id", "name", "email"] = "id",
+    sort_order: Literal["asc", "desc"] = "asc",
     db: Session = Depends(get_db)
 ):
-    return get_students(db, department, course)
+    students = get_students(db, department, course)
+
+    if sort_by == "name":
+        students.sort(key=lambda student: student.name.lower())
+    elif sort_by == "email":
+        students.sort(key=lambda student: student.email.lower())
+    else:
+        students.sort(key=lambda student: student.id)
+
+    if sort_order.lower() == "desc":
+        students.reverse()
+
+
+    start = (page - 1) * limit
+    end = start + limit
+
+    return students[start:end]
+
+
+@router.get(
+    "/stats",
+    summary="Get student statistics",
+    description="Get summary statistics about students."
+)
+def get_student_stats(
+    db: Session = Depends(get_db)
+):
+    students = get_students(db, None, None)
+
+    total_students = len(students)
+    total_departments = len(set(student.department for student in students))
+    total_courses = len(set(student.course for student in students))
+    department_counts = {}
+
+    for student in students:
+        department_counts[student.department] = (
+            department_counts.get(student.department, 0) + 1
+    )
+
+    return {
+    "total_students": total_students,
+    "total_departments": total_departments,
+    "total_courses": total_courses,
+    "students_by_department": department_counts
+}
+
 
 @router.get(
     "/{student_id}",
