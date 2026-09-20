@@ -6,9 +6,16 @@ from app.routers.students import router as student_router
 
 app = FastAPI(
     title="Student Database API",
-    description="Backend API for Student Database Application System",
+    description="REST API for managing student records.",
     version="1.0.0"
 )
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {
+        "status": "healthy",
+        "service": "student-database-api"
+    }
 
 
 app.include_router(student_router)
