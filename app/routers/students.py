@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.security.auth import get_current_user
 from typing import Literal
 from sqlalchemy.orm import Session
 
@@ -9,7 +10,8 @@ from app.crud.student import create_student, get_students, get_student, update_s
 
 router = APIRouter(
     prefix="/students",
-    tags=["Students"]
+    tags=["Students"],
+    dependencies=[Depends(get_current_user)]
 )
 
 
