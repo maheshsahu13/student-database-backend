@@ -948,3 +948,102 @@ if (refreshButton) {
 loadStudents();
 
 loadStatistics();
+
+// ========================================
+// AI CHATBOT
+// ========================================
+
+const chatForm = document.getElementById("chatForm");
+const chatInput = document.getElementById("chatInput");
+const chatMessages = document.getElementById("chatMessages");
+const chatButton = document.getElementById("chatButton");
+
+if (chatForm) {
+    chatForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const question = chatInput.value.trim();
+
+        if (!question) {
+            return;
+        }
+
+        // Show user's question
+        addChatMessage(question, "user-message");
+
+        // Clear input
+        chatInput.value = "";
+
+        // Disable button while AI is responding
+        chatButton.disabled = true;
+        chatButton.textContent = "Thinking...";
+
+        // Show temporary loading message
+        const loadingMessage = addChatMessage(
+            "Thinking...",
+            "bot-message"
+        );
+
+        try {
+            const response = await fetch(
+                `${API_URL}/chat/`,
+                {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        question: question
+                    })
+                }
+            );
+
+            // If token expired
+            if (response.status === 401) {
+                logoutUser();
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Failed to get AI response."
+                );
+            }
+
+            // Replace "Thinking..." with AI answer
+            loadingMessage.textContent = data.answer;
+
+        } catch (error) {
+            console.error("Chat error:", error);
+
+            loadingMessage.textContent =
+                "Unable to get a response from the AI assistant.";
+        } finally {
+            chatButton.disabled = false;
+            chatButton.textContent = "Ask AI";
+            chatInput.focus();
+        }
+    });
+}
+
+
+// ========================================
+// ADD CHAT MESSAGE
+// ========================================
+
+function addChatMessage(message, className) {
+
+    const messageElement = document.createElement("div");
+
+    messageElement.className =
+        `chat-message ${className}`;
+
+    messageElement.textContent = message;
+
+    chatMessages.appendChild(messageElement);
+
+    // Automatically scroll to latest message
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    return messageElement;
+}
