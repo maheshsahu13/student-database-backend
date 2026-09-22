@@ -470,48 +470,101 @@ student-database-backend/
 
 ---
 
-# 🧩 Vector Database Decision
+## Vector Database Research and Selection
 
-A vector database is **not included in the current implementation**.
+### Requirement
 
-The primary application data consists of structured student records. Therefore, SQL-based retrieval through the SQLite database is used for the current chatbot.
+The project instructions require research into suitable vector databases and a technical justification for the selected option. The selection should consider integration, similarity search, scalability, development complexity, cost/free-tier availability, and compatibility with the project architecture.
 
-A vector database could be introduced in a future version for semantic search over unstructured information such as:
+### Options Considered
+
+| Option       | Strengths                                                                                                                                                | Limitations                                                                                                                                        | Suitability                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **FAISS**    | Efficient dense-vector similarity search, strong Python support, lightweight for local development, supports multiple index types and similarity metrics | Primarily a vector-search library rather than a complete hosted database service; application code must handle persistence and metadata separately | High for this project's future local semantic-search extension |
+| **Chroma**   | Developer-friendly vector storage and retrieval, suitable for local embedding and RAG experimentation                                                    | Adds another persistence and retrieval component that is unnecessary for the current structured student-data queries                               | Good for RAG experimentation                                   |
+| **Pinecone** | Managed vector database with hosted infrastructure and scalable similarity search                                                                        | Adds an external cloud dependency and is unnecessary for the current small local project                                                           | Good for production-scale hosted semantic search               |
+
+### Selected Option: FAISS
+
+**FAISS (Facebook AI Similarity Search)** is selected as the vector-search technology for the future semantic-search extension of this project.
+
+FAISS provides efficient similarity search and clustering of dense vectors and has Python support. It supports multiple index structures and similarity methods, including L2 distance and inner-product search. Cosine similarity can also be implemented by normalizing vectors before inner-product search.
+
+### Technical Justification
+
+FAISS was selected for the following reasons:
+
+1. **Python compatibility**
+   FAISS has Python support and can be incorporated into a Python-based AI application.
+
+2. **Similarity search**
+   It is designed for efficient similarity search over dense vector representations, which makes it suitable for future semantic-search functionality.
+
+3. **Development simplicity**
+   FAISS can be used locally without requiring a separate hosted database service, which keeps development relatively simple.
+
+4. **Cost and open-source availability**
+   FAISS is available as open-source software, making it suitable for a low-cost student project and local experimentation.
+
+5. **Search scalability**
+   FAISS provides different index structures that can support larger vector collections as the semantic-search dataset grows.
+
+6. **Future RAG compatibility**
+   FAISS can be used as the retrieval layer in a future Retrieval-Augmented Generation (RAG) architecture together with embeddings and Gemini.
+
+### Why FAISS Is Not Integrated Into the Current Chatbot
+
+The current Student Database application primarily contains structured relational information such as:
+
+* Student name
+* Email
+* Phone
+* Department
+* Course
+* Semester
+* CGPA
+
+Questions such as student counts, CGPA information, department information, filtering, and sorting are better handled through SQL queries against the SQLite database rather than semantic vector search.
+
+Therefore, the current chatbot uses **SQL-based retrieval** for structured student information.
+
+FAISS is selected as a **future extension** for semantic search over unstructured information such as:
 
 * College policies
 * Student handbooks
 * Scholarship documents
 * Course descriptions
 * University notices
-* PDF documents
-* Text documents
+* PDF and text documents
 
-A future hybrid architecture could look like:
+This approach avoids adding unnecessary complexity to the current application while keeping the architecture ready for future semantic-search functionality.
+
+### Future Hybrid Architecture
 
 ```text
-                         User
-                           |
-                           v
-                      AI Chatbot
-                           |
-                           v
-                       LangGraph
-                       /       \
-                      /         \
-                     v           v
-              SQL Database   Vector Database
-               Structured     Unstructured
-                  Data           Data
-                     \           /
-                      \         /
-                       v       v
-                         Gemini
-                           |
-                           v
-                        Response
+User Question
+      |
+      v
+   LangGraph
+      |
+      +--------------------+
+      |                    |
+      v                    v
+ SQL / SQLite            FAISS
+      |                    |
+ Structured Data       Semantic Search
+      |                    |
+      +---------+----------+
+                |
+                v
+             Gemini
+                |
+                v
+          Final Response
 ```
 
-The vector database is therefore considered a **future extension** rather than a component of the current system.
+In the current implementation, the SQL/SQLite retrieval path is used. FAISS is documented as the selected vector-search technology for a future semantic-search and document-retrieval extension.
+
 
 ---
 
