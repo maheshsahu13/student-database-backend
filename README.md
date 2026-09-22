@@ -415,6 +415,16 @@ http://127.0.0.1:8000/docs
 ```
 
 ---
+## Running with Docker
+
+The backend can also be run using Docker.
+
+### Build the Docker Image
+
+From the project root:
+
+```powershell
+docker build -t student-database-api .
 
 ## Testing
 
