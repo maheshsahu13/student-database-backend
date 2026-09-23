@@ -269,7 +269,40 @@ Avoid inventing student information
 Use SQLite for exact values
 Use semantic retrieval for conceptual relationships
 Combine structured and semantic information for hybrid questions
-🧮 Vector Database
+#🧮 Vector Database
+
+# 🔬 Vector Database Research and Selection
+
+The project uses **ChromaDB** as its vector database for semantic retrieval and the RAG architecture.
+
+Before selecting the vector database, different approaches were considered based on the requirements of the project, including ease of integration, semantic similarity search, development complexity, cost, scalability, and compatibility with the existing Python/FastAPI architecture.
+
+## Vector Database Options Considered
+
+The main options considered were:
+
+- ChromaDB
+- FAISS
+- Cloud-based vector database services
+
+The project requires a vector database that can support semantic search over student information while remaining simple and cost-effective during development.
+
+## Why ChromaDB Was Selected
+
+### 1. Easy Python Integration
+
+ChromaDB provides a Python interface that integrates naturally with the existing FastAPI application.
+
+The project is already implemented in Python, so ChromaDB can be used directly from the application's service layer without introducing a separate technology stack.
+
+### 2. Semantic Similarity Search
+
+The chatbot needs to answer natural-language questions that cannot always be handled effectively using traditional SQL queries.
+
+For example:
+
+```text
+Who is studying computer science?
 
 The project uses ChromaDB as its local vector database.
 
