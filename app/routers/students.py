@@ -5,7 +5,15 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.schemas.student import StudentCreate, StudentResponse, StudentUpdate
-from app.crud.student import create_student, get_students, get_student, update_student, delete_student
+from app.crud.student import (
+    create_student,
+    get_students,
+    get_student,
+    update_student,
+    delete_student
+)
+
+from app.services.student_vector_service import StudentVectorService
 
 
 router = APIRouter(
@@ -13,6 +21,10 @@ router = APIRouter(
     tags=["Students"],
     dependencies=[Depends(get_current_user)]
 )
+
+
+# Create vector service once for this router
+vector_service = StudentVectorService()
 
 
 @router.post(
@@ -27,7 +39,12 @@ def add_student(
     db: Session = Depends(get_db)
 ):
     try:
-        return create_student(db, student)
+        new_student = create_student(db, student)
+
+        # Sync the newly created student with ChromaDB
+        vector_service.index_student(new_student)
+
+        return new_student
 
     except ValueError as e:
         raise HTTPException(
@@ -63,7 +80,6 @@ def read_students(
     if sort_order.lower() == "desc":
         students.reverse()
 
-
     start = (page - 1) * limit
     end = start + limit
 
@@ -81,21 +97,26 @@ def get_student_stats(
     students = get_students(db, None, None)
 
     total_students = len(students)
-    total_departments = len(set(student.department for student in students))
-    total_courses = len(set(student.course for student in students))
+    total_departments = len(
+        set(student.department for student in students)
+    )
+    total_courses = len(
+        set(student.course for student in students)
+    )
+
     department_counts = {}
 
     for student in students:
         department_counts[student.department] = (
             department_counts.get(student.department, 0) + 1
-    )
+        )
 
     return {
-    "total_students": total_students,
-    "total_departments": total_departments,
-    "total_courses": total_courses,
-    "students_by_department": department_counts
-}
+        "total_students": total_students,
+        "total_departments": total_departments,
+        "total_courses": total_courses,
+        "students_by_department": department_counts
+    }
 
 
 @router.get(
@@ -118,6 +139,7 @@ def read_student(
 
     return student
 
+
 @router.put(
     "/{student_id}",
     response_model=StudentResponse,
@@ -132,10 +154,13 @@ def edit_student(
     student = update_student(db, student_id, student_data)
 
     if student is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Student with ID {student_id} not found"
-            )
+        raise HTTPException(
+            status_code=404,
+            detail=f"Student with ID {student_id} not found"
+        )
+
+    # Sync the updated student with ChromaDB
+    vector_service.index_student(student)
 
     return student
 
@@ -153,9 +178,14 @@ def remove_student(
     student = delete_student(db, student_id)
 
     if student is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Student with ID {student_id} not found"
-            )
+        raise HTTPException(
+            status_code=404,
+            detail=f"Student with ID {student_id} not found"
+        )
+
+    # Remove the deleted student from ChromaDB
+    vector_service.vector_store.collection.delete(
+        ids=[str(student_id)]
+    )
 
     return student

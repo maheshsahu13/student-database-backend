@@ -1,3 +1,4 @@
+from unittest.mock import patch
 def get_auth_headers(client):
     client.post(
         "/auth/register",
@@ -29,7 +30,8 @@ def test_students_requires_authentication(client):
     assert response.status_code == 401
 
 
-def test_create_student(client):
+@patch("app.routers.students.vector_service.index_student")
+def test_create_student(mock_index_student, client):
     headers = get_auth_headers(client)
 
     response = client.post(
